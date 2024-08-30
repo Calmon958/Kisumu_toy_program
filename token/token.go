@@ -8,6 +8,10 @@ type Token struct{
 }
 
 const(
+//essential strings are keyword tokens. Anything assigned to a string is a key word character.
+// Those assigned to a single character are known as one-character tokens
+// tw0-character tokens ie '==', '!='
+
 	//special types
 	ILLEGAL = "ILLEGAL" //token or character not known about
 	EOF = "EOF" //end of file
@@ -15,11 +19,18 @@ const(
 	IDENT = "IDENT"
 	INT = "INT"
 
+	//operators
 	ASSIGN = "="
 	PLUS = "+"
 	MINUS = "-"
-	MULTIPLY = "*"
-	DIVIDE = "/"
+	ASTERIC = "*"
+	SLASH = "/"
+	BANG = "!"
+
+	LT = "<"
+	GT = ">"
+	LE = "<="
+	GE = ">="
 
 	COMMA = ","
 	SEMICOLON = ";"
@@ -32,13 +43,32 @@ const(
 	LBRACKET = "["
 	RBRACKET = "]"
 
+
+	//keywords
 	FUNCTION = "FUNCTION"
 	LET = "LET"
+	IF = "IF"
+	ELSE = "ELSE"
+	RETURN = "RETURN"
+	// WHILE = "WHILE"
+	TRUE = "TRUE"
+	FALSE = "FALSE"
+
+	//two-character tokens
+	EQ = "=="
+	NOT_EQ = "!="
 )
  
 var keywords = map[string]TokenType {
 	"fn" : FUNCTION,
 	"let" : LET,
+	"true" : TRUE,
+	"false" : FALSE,
+	"if" : IF,
+	"else" : ELSE,
+	"return" : RETURN,
+	// "while" : WHILE,
+
 }
 
 func LookUpIdent(ident string) TokenType {
