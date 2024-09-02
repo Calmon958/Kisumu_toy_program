@@ -34,3 +34,8 @@ it Print the command enter broken down into `Type:` and `Literal:`; basically if
 {TYPE:INT Literal:5}
 ```
 Thats all for today.
+
+### 2 Sep
+Started on Parser....Was a bit more complex than I initially thought but it's the part of the program that has most of the work.
+Essentially the parse takes source code and builds data structure analysing the input to check if it has a certain structure.
+Did the first part for creating the AST with basic skeleton and the parse with basic parts. Run into an error to be dealt with when next endulging in the project. 
