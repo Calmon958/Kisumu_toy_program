@@ -39,3 +39,17 @@ Thats all for today.
 Started on Parser....Was a bit more complex than I initially thought but it's the part of the program that has most of the work.
 Essentially the parse takes source code and builds data structure analysing the input to check if it has a certain structure.
 Did the first part for creating the AST with basic skeleton and the parse with basic parts. Run into an error to be dealt with when next endulging in the project. 
+
+
+### 4 Sep
+
+Managed to build on the parser and try to create the AST progrsm by adding a few things into it.
+Adding more features on 
+ #### * AST
+ Handle the return type and expression for the Nodes
+
+ #### * Parser test
+ Modified test for parser to remove any/all unused codes.
+
+ #### * Parser
+ For considering the prefix, infix operators in a function.
