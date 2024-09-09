@@ -3,10 +3,23 @@ package parser
 import (
 	// "go/token"
 	"fmt"
+	"strconv"
 
 	"token/ast"
 	lex "token/lexer"
+	"token/token"
 	tok "token/token"
+)
+
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -S or !S
+	CALL        // add(a, b)
 )
 
 type Parser struct {
@@ -16,12 +29,12 @@ type Parser struct {
 	errors    []string // initialize errors field
 
 	prefixParseFns map[tok.TokenType]prefixParseFn
-	infixParseFns map[tok.TokenType]infixParseFn
+	infixParseFns  map[tok.TokenType]infixParseFn
 }
 
 type (
 	prefixParseFn func() ast.Expression
-	infixParseFn func(ast.Expression) ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
 )
 
 // stores the current and peek positions
@@ -33,6 +46,19 @@ func New(l *lex.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+
+	// for the identifiers
+	p.prefixParseFns = make(map[tok.TokenType]prefixParseFn)
+	p.registerPrefix(tok.IDENT, p.parserIdentifier)
+
+	// for integer
+	p.prefixParseFns = make(map[tok.TokenType]prefixParseFn)
+	p.registerPrefix(tok.IDENT, p.parserIdentifier)
+	p.registerPrefix(tok.INT, p.parseIntegerLiteral)
+
+	// prefix expressions and registers
+	p.registerPrefix(token.BANG, p.parserPrefixExpression)
+	p.registerPrefix(token.MINUS, p.parserPrefixExpression)
 
 	return p
 }
@@ -64,14 +90,14 @@ func (p *Parser) parseStatement() ast.Statement {
 	case tok.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 	p.nextToken()
-	
+
 	if !p.expectPeek(tok.IDENT) {
 		return nil
 	}
@@ -89,7 +115,6 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 	p.nextToken()
-
 
 	for !p.curTokenIs(tok.SEMICOLON) {
 		p.nextToken()
@@ -119,13 +144,11 @@ func (p *Parser) Errors() []string {
 	return p.errors
 }
 
-
-//helper function for initializing errors
+// helper function for initializing errors
 func (p *Parser) peekError(t tok.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
 }
-
 
 func (p *Parser) registerPrefix(tokenType tok.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
@@ -133,4 +156,57 @@ func (p *Parser) registerPrefix(tokenType tok.TokenType, fn prefixParseFn) {
 
 func (p *Parser) registerInfix(tokenType tok.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(tok.SEMICOLON) {
+		p.nextToken()
+	}
+	return stmt
+}
+
+func (p *Parser) noPrefixParseFnError(t tok.TokenType) {
+	msg := fmt.Sprintf("no prefix function for %s found", t)
+	p.errors = append(p.errors, msg)
+}
+
+// checks whether there is a parser function associated with p.curToken.Type prefix
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		p.noPrefixParseFnError(p.curToken.Type)
+		return nil
+	}
+	leftExp := prefix()
+	return leftExp
+}
+
+func (p *Parser) parserIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	lit.Value = value
+	return lit
+}
+
+func (p *Parser) parserPrefixExpression() ast.Expression {
+	expression := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+	p.nextToken()
+	expression.Right = p.parseExpression(PREFIX)
+	return expression
 }

@@ -53,3 +53,8 @@ Adding more features on
 
  #### * Parser
  For considering the prefix, infix operators in a function.
+
+
+ ### 9 Sep
+
+Worked on parser to identify the  identifiers, expressions and integers. Did there expessions while adding there functions in both the parser and ast. 

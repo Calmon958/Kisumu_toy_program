@@ -1,7 +1,9 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
+
 	lex "token/lexer"
 
 	ast "token/ast"
@@ -17,34 +19,133 @@ func TestLetStatement(t *testing.T) {
 	p := New(l)
 
 	program := p.ParseProgram()
-	checkParseErrors(t,p)
-	
+	checkParserErrors(t, p)
+
 	if len(program.Statements) != 3 {
 		t.Fatalf("program.Statements doesn't have 3 statements. Got %d", len(program.Statements))
 	}
-for _, stmt := range program.Statements {
-	returnStmt, ok := stmt.(*ast.ReturnStatement)
-	if !ok {
-		t.Errorf("stmt not *ast.returnStatement. got = %T", stmt)
-		continue
-	}
-	if returnStmt.TokenLiteral() != "return" {
-		t.Errorf("returnStmt.TokenLiteral not 'return', got %q", returnStmt.TokenLiteral())
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt not *ast.returnStatement. got = %T", stmt)
+			continue
+		}
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("returnStmt.TokenLiteral not 'return', got %q", returnStmt.TokenLiteral())
+		}
 	}
 }
-}
-
-
 
 // checks for parser errors and prints them and kill the execution if it encounters an error
-func checkParseErrors(t *testing.T, p *Parser) {
+func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
 		return
 	}
 	t.Errorf("Parser has %d errors", len(errors))
-	for _, msg := range errors{
+	for _, msg := range errors {
 		t.Errorf("Parser error: %q", msg)
 	}
 	t.FailNow()
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+	l := lex.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Program has not enough statements. Got=%d", len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statement[0] is not ast.ExpressionStatement. Got=%T", program.Statements[0])
+	}
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("Expression not *ast.Identifier. Got=%T", stmt.Expression)
+	}
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("ident.TokenLiteral not %s. Got=%s", "foobar", ident.TokenLiteral())
+	}
+}
+
+func TestIntergerLiteralExpression(t *testing.T) {
+	input := "9"
+
+	l := lex.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Program has not enough statements. Got=%d", len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. Got=%T", program.Statements[0])
+	}
+	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("Expression not *ast.IntegerLiteral. Got=%T", stmt.Expression)
+	}
+	if literal.Value != 9 {
+		t.Errorf("literal.Value not %d. Got=%d", 5, literal.Value)
+	}
+	if literal.TokenLiteral() != "9" {
+		t.Errorf("literal.TokenLiteral not %s. Got=%s", "9", literal.TokenLiteral())
+	}
+}
+
+func TestParsingPrefixExpressions(t *testing.T) {
+	prefixTests := []struct {
+		input    string
+		operator string
+		intValue int64
+	}{
+		{"!5;", "!", 5},
+		{"-15;", "-", 15},
+	}
+	for _, ch := range prefixTests {
+		l := lex.New(ch.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements doesn't contain %d statement. Got=%d\n", 1, len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. Got=%T", program.Statements[0])
+		}
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("stmt is not ast.PrefixExpression. Got=%T", stmt.Expression)
+		}
+		if exp.Operator != ch.operator {
+			t.Fatalf("exp.Operator is not '%s'. Got=%s", ch.operator, exp.Operator)
+		}
+		if !testIntegerLiteral(t, exp.Right, ch.intValue) {
+			return
+		}
+	}
+}
+
+func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
+	nb, ok := il.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("il not *ast.IntegerLiteral. Got=%T", il)
+		return false
+	}
+	if nb.Value != value {
+		t.Errorf("nb.Value not %d. Got=%d", value, nb.Value)
+	}
+	if nb.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("nb.TokenLiteral not %d. Got=%s", value, nb.TokenLiteral())
+		return false
+	}
+	return true
 }

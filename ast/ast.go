@@ -1,8 +1,8 @@
 package ast
 
 import (
-
 	"bytes"
+
 	"token/token"
 )
 
@@ -37,15 +37,26 @@ type Identifier struct {
 	Value string
 }
 
-//for return statements
+// for return statements
 type ReturnStatement struct {
-	Token token.Token
+	Token       token.Token
 	ReturnValue Expression
 }
 
 type ExpressionStatement struct {
-	Token token.Token
+	Token      token.Token
 	Expression Expression
+}
+
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+type PrefixExpression struct {
+	Token    token.Token
+	Operator string
+	Right    Expression
 }
 
 func (ls *LetStatement) statementNode() {}
@@ -73,7 +84,6 @@ func (rs *ReturnStatement) TokenLiteral() string {
 	return rs.Token.Literal
 }
 
-
 func (es *ExpressionStatement) statementNode() {}
 func (es *ExpressionStatement) TokenLiteral() string {
 	return es.Token.Literal
@@ -82,7 +92,7 @@ func (es *ExpressionStatement) TokenLiteral() string {
 // creates a buffer and writes return value of String() method
 func (p *Program) String() string {
 	var out bytes.Buffer
-	for  _, s := range p.Statements {
+	for _, s := range p.Statements {
 		out.WriteString(s.String())
 	}
 	return out.String()
@@ -121,5 +131,20 @@ func (es *ExpressionStatement) String() string {
 	return ""
 }
 
-func (i *Identifier) String() string { return i.Value}
+func (i *Identifier) String() string { return i.Value }
 
+func (il *IntegerLiteral) expressionNode()      {}
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+func (pe *PrefixExpression) expressionNode()      {}
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
