@@ -58,3 +58,9 @@ Adding more features on
  ### 9 Sep
 
 Worked on parser to identify the  identifiers, expressions and integers. Did there expessions while adding there functions in both the parser and ast. 
+
+
+### 10 Sep
+Worked on parser all the way to how pratt parsing works. Expanded the AST tree to accomodate for a few things andalso grow lexer and ast for symbol acceptance and all.
+
+pg71
